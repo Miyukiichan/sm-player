@@ -4,16 +4,15 @@ using sm_player.Models;
 
 namespace sm_player.Views;
 
-public class Player : View {
+public class Player : FrameView {
     Track? Track;
     Label _label;
     LibVLC libvlc = new LibVLC(enableDebugLogs: false);
     MediaPlayer _mediaPlayer;
     public Player() {
-        Y = Pos.Percent(90);
-        X = 0;
+        Border.BorderStyle = BorderStyle.Rounded;
         Width = Dim.Fill();
-        Height = Dim.Fill();
+        Height = 3;
          _mediaPlayer = new MediaPlayer(libvlc);
         _label = new Label {
             Text = "No Track"
