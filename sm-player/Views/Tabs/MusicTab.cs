@@ -4,22 +4,34 @@ using Terminal.Gui;
 namespace sm_player.Views.Tabs;
 
 public class MusicTabNavigation : FrameView {
-    Label _backButton;
+    Button _backButton;
+    Button _addButton;
+    Button _appendButton;
     MusicTab _tab;
     public MusicTabNavigation(MusicTab tab) {
         CanFocus = false;
         Height = 3;
         Width = Dim.Fill();
         _tab = tab;
-        _backButton = new Label("<---");
-        _backButton.Width = Dim.Fill();
-        _backButton.Height = Dim.Fill();
+        _backButton = new Button("<---");
+        _backButton.X = 0;
         _backButton.Clicked += BackClicked;
-        _backButton.TextAlignment = TextAlignment.Centered;
-        Add(_backButton);
+        _addButton = new Button("Add");
+        _addButton.Clicked += AddAll;
+        _addButton.X = 9;
+        _appendButton = new Button("Append");
+        _appendButton.X = 17;
+        _appendButton.Clicked += AppendAll;
+        Add(_backButton, _addButton, _appendButton);
     }
     private void BackClicked() {
         _tab.Back();
+    }
+    private void AppendAll() {
+        _tab.AppendAll();
+    }
+    private void AddAll() {
+        _tab.AddAll();
     }
 }
 
@@ -27,7 +39,6 @@ public class MusicTab : View {
     public string CurrentDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     private ListView _lv;
     private MusicTabNavigation _nav;
-    private ContextMenu _cm;
     private List<string> _files = new List<string>();
     private Playlist _playlist;
 
@@ -43,7 +54,6 @@ public class MusicTab : View {
             AllowsMultipleSelection = false,
         };
         _lv.OpenSelectedItem += OpenSelected;
-        _lv.MouseClick += ListMouseEvent;
         _nav = new MusicTabNavigation(this);
         Load();
         Add(_nav, _lv);
@@ -73,12 +83,15 @@ public class MusicTab : View {
         }
     }
 
-    void ListMouseEvent(MouseEventArgs args) { 
-        if (args.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked))
-            _cm.Show();
-    }
-
     public void Back() {
         Load(Directory.GetParent(CurrentDir).FullName);
+    }
+    public void AddAll() {
+        var paths = _files.Select(x => Path.Combine(CurrentDir, x)).ToList();
+        _playlist.SetTracks(paths);
+    }
+    public void AppendAll() {
+        var paths = _files.Select(x => Path.Combine(CurrentDir, x)).ToList();
+        _playlist.AddTracks(paths);
     }
 }

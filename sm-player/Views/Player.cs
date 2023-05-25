@@ -19,10 +19,15 @@ public class Player : FrameView {
         };
         Add(_label);
     }
-    public void SetTrack(Track track) {
+    public void SetTrack(Track? track) {
+        if (track == null) return;
         Track = track;
-        _label.Text = track.Path;
-        var media = new Media(libvlc, new Uri(track.Path));
+        _label.Text = track.Name;
+        var media = new Media(libvlc, new Uri(track.FullPath));
         _mediaPlayer.Play(media);
+    }
+    public void Stop() {
+        _mediaPlayer.Stop();
+        _label.Text = "No Track";
     }
 }
