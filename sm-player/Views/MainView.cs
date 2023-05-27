@@ -13,12 +13,19 @@ public class MainTabs : FrameView {
             Height = Dim.Fill()
         };
         tabs.Style.ShowBorder = false;
-        tabs.AddTab(new TabView.Tab("Music", new MusicTab(playlist)), false);
-        tabs.AddTab(new TabView.Tab("Podcasts", new PodcastTab()), false);
-        tabs.AddTab(new TabView.Tab("Spotify", new SpotifyTab()), false);
-        tabs.AddTab(new TabView.Tab("Youtube", new YoutubeTab()), false);
-        tabs.AddTab(new TabView.Tab("Streams", new StreamTab()), false);
-        tabs.SelectedTab = tabs.Tabs.First ();
+        var settings = new SettingsTab();
+        if (settings.Settings.EnableMusic)
+            tabs.AddTab(new TabView.Tab("Music", new MusicTab(playlist, settings.Settings)), false);
+        if (settings.Settings.EnablePodcasts)
+            tabs.AddTab(new TabView.Tab("Podcasts", new PodcastTab()), false);
+        if (settings.Settings.EnableSpotify)
+            tabs.AddTab(new TabView.Tab("Spotify", new SpotifyTab()), false);
+        if (settings.Settings.EnableYoutube)
+            tabs.AddTab(new TabView.Tab("Youtube", new YoutubeTab()), false);
+        if (settings.Settings.EnableStreams)
+            tabs.AddTab(new TabView.Tab("Streams", new StreamTab()), false);
+        tabs.AddTab(new TabView.Tab("Settings", settings), false);
+        tabs.SelectedTab = tabs.Tabs.First();
         Add(tabs);
     }
 }

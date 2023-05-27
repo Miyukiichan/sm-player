@@ -50,8 +50,44 @@ public class Playlist : FrameView {
         _table.CellActivated += CellActivated;
         Add(_controls, _table);
         _player = player;
+        _player.EndReached += TrackStopped;
+        _player.InitMediaPlayer();
     }
-    public Track AddTrack(string path, bool noplay = false) {
+
+    private void TrackStopped(object? sender, EventArgs e)
+    {
+        switch (_player.PlaybackMode) {
+            case PlaybackMode.Repeat: {
+                if (Tracks.LastOrDefault() == _player.Track) {
+                    PlayTrack(Tracks.First());
+                }
+                else {
+                    PlayTrack(Tracks.IndexOf(_player.Track) + 1);
+                }
+                break;   
+            }
+            case PlaybackMode.RepeatSingle: {
+                _player.SetTrack(_player.Track);
+                break;   
+            }
+            case PlaybackMode.NoRepeat: {
+                if (Tracks.LastOrDefault() != _player.Track) {
+                    PlayTrack(Tracks.IndexOf(_player.Track) + 1);
+                }
+                break;
+            }
+            case PlaybackMode.Shuffle: {
+                var random = new Random();
+                var index = random.Next(Tracks.Count());
+                PlayTrack(index);
+                break;
+            }
+        }
+        //Need to refresh at this point since sometimes the track change will not display when the user is not focused on the terminal
+        Application.Refresh();
+    }
+
+    public Track? AddTrack(string path, bool noplay = false) {
         if (new DirectoryInfo(path).Attributes.HasFlag(FileAttributes.Directory)) return null;
         var type = MimeTypesMap.GetMimeType(path);
         if (!type.StartsWith("audio/")) return null;
@@ -88,7 +124,17 @@ public class Playlist : FrameView {
         AddTracks(paths, false);
     }
     void CellActivated(TableView.CellActivatedEventArgs args) {
-        var track = Tracks.ElementAt(args.Row);
+        PlayTrack(args.Row);
+    }
+
+    void PlayTrack(int index) {
+        var track = Tracks.ElementAt(index);
+        _table.SelectedRow = index;
+        _player.SetTrack(track);
+    }
+
+    void PlayTrack(Track track) {
+        _table.SelectedRow = Tracks.IndexOf(track);
         _player.SetTrack(track);
     }
 
@@ -96,10 +142,14 @@ public class Playlist : FrameView {
         if (!Tracks.Any()) return;
         var trackIdx = _table.SelectedRow;
         var track = Tracks.ElementAt(trackIdx);
-        _player.Stop();
         _table.Table.Rows.RemoveAt(trackIdx);
         Tracks.Remove(track);
         _table.SelectedRow = trackIdx;
+        if (_player.Track != track) {
+            _table.SetFocus();
+            return;
+        }
+        _player.Stop();
         var newTrack = Tracks.ElementAtOrDefault(trackIdx);
         if (newTrack is not null) 
             _player.SetTrack(newTrack);

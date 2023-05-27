@@ -1,4 +1,5 @@
 using HeyRed.Mime;
+using sm_player.Models;
 using Terminal.Gui;
 
 namespace sm_player.Views.Tabs;
@@ -41,8 +42,10 @@ public class MusicTab : View {
     private MusicTabNavigation _nav;
     private List<string> _files = new List<string>();
     private Playlist _playlist;
+    Settings _settings;
 
-    public MusicTab(Playlist playlist) {
+    public MusicTab(Playlist playlist, Settings settings) {
+        _settings = settings;
         CanFocus = false;
         _playlist = playlist;
         Width = Dim.Fill();
@@ -55,6 +58,8 @@ public class MusicTab : View {
         };
         _lv.OpenSelectedItem += OpenSelected;
         _nav = new MusicTabNavigation(this);
+        if (Directory.Exists(_settings.DefaultDir))
+            CurrentDir = _settings.DefaultDir;
         Load();
         Add(_nav, _lv);
     }
@@ -84,7 +89,9 @@ public class MusicTab : View {
     }
 
     public void Back() {
-        Load(Directory.GetParent(CurrentDir).FullName);
+        var parent = Directory.GetParent(CurrentDir);
+        if (parent == null) return;
+        Load(parent.FullName);
     }
     public void AddAll() {
         var paths = _files.Select(x => Path.Combine(CurrentDir, x)).ToList();
