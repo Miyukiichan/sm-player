@@ -12,6 +12,7 @@ public class Player : FrameView {
     Button _playPauseButton;
     Button _repeatButton;
     LibVLC libvlc = new LibVLC(enableDebugLogs: false);
+    ProgressBar _progress;
     private MediaPlayer _mediaPlayer { get; set; }
     public EventHandler<EventArgs> EndReached;
     public void InitMediaPlayer() {
@@ -35,7 +36,21 @@ public class Player : FrameView {
         _repeatButton = new Button("Repeat");
         _repeatButton.X = Pos.Percent(100) - 10;
         _repeatButton.Clicked += RepeatToggle;
-        Add(_label, _playPauseButton, _repeatButton);
+        _progress = new ProgressBar {
+            X = Pos.Right(_label) + 2,
+            Width = Dim.Fill() - 28,
+            Height = 1,
+            Fraction = 0,
+        };
+        Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(1), (mainLoop) => {
+            if (_mediaPlayer is null) 
+                _progress.Fraction = 0;
+            else
+                _progress.Fraction = _mediaPlayer.Position;
+            return true;
+        });
+        _progress.MouseClick += ProgressClicked;
+        Add(_label, _playPauseButton, _repeatButton, _progress);
     }
 
     public void SetTrack(Track? track) {
@@ -98,5 +113,9 @@ public class Player : FrameView {
                 break;
             }
         }
+    }
+    void ProgressClicked(MouseEventArgs args) {
+        if (args.MouseEvent.Flags.HasFlag(MouseFlags.Button1Clicked))
+            _mediaPlayer.Position = (float)args.MouseEvent.X / (float)_progress.Bounds.Width;
     }
 }
