@@ -15,14 +15,17 @@ public class SettingsTab : FrameView {
     public SettingsTab() {
         Height = Dim.Fill();
         Width = Dim.Fill();
-        var path = ConfigPath();
-        if (File.Exists(path)) {
+        Settings = new Settings();
+        var path = Settings.ConfigPath();
+        if (File.Exists(path))
+        {
             Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path));
         }
-        else {
-            Settings = new Settings();
-            Save();
+        else
+        {
+            Settings.Save();
         }
+
         var dirlabel = new Label("Default Directory:");
         var dirButton = new Button("Browse") {
             X = Pos.Right(dirlabel) + 2,
@@ -99,16 +102,13 @@ public class SettingsTab : FrameView {
         );
     }
     void Save() {
-        var parent = GetParentDir();
-        if (!Directory.Exists(parent))
-            Directory.CreateDirectory(parent);
         Settings.DefaultDir = _dirEdit.Text.ToString();
         Settings.EnableMusic = _musicEnable.Checked;
         Settings.EnablePodcasts = _podcastsEnable.Checked;
         Settings.EnableSpotify = _spotifyEnable.Checked;
         Settings.EnableStreams = _streamsEnable.Checked;
         Settings.EnableYoutube = _youtubeEnable.Checked;
-        File.WriteAllText(ConfigPath(), JsonSerializer.Serialize(Settings));
+        Settings.Save();
     }
     void BrowseDir() {
         var dialog = new OpenDialog();
@@ -120,11 +120,5 @@ public class SettingsTab : FrameView {
         Application.Run(dialog);
         if (dialog.Canceled) return;
         _dirEdit.Text = dialog.FilePath;
-    }
-    string GetParentDir() {
-        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "sm-player");
-    }
-    string ConfigPath() {
-        return Path.Combine(GetParentDir(), "app.config");
     }
 }

@@ -69,7 +69,7 @@ public class MusicTab : View {
         var dirInfo = new DirectoryInfo(CurrentDir).GetDirectories();
         var d = dirInfo.Where(x => !x.Attributes.HasFlag(FileAttributes.Hidden)).Select(x => x.Name).Order();
         var fileInfo = new DirectoryInfo(CurrentDir).GetFiles();
-        var f = fileInfo.Where(x => !x.Attributes.HasFlag(FileAttributes.Hidden) && MimeTypesMap.GetMimeType(x.Name).StartsWith("audio/")).Select(x => x.Name).Order();
+        var f = fileInfo.Where(x => !x.Attributes.HasFlag(FileAttributes.Hidden) && MimeTypesMap.GetMimeType(x.Name).StartsWith("audio/")).Select(x => "> " + x.Name).Order();
         _files = d.Concat(f).ToList();
         _lv.SetSource(_files);
     }
@@ -77,6 +77,8 @@ public class MusicTab : View {
     void OpenSelected(ListViewItemEventArgs args) {
         var item = args.Value as string;
         if (item is null) return;
+        if (item.StartsWith("> "))
+            item = item.Remove(0, 2);
         var path = Path.Combine(CurrentDir, item);
         if (!Path.Exists(path)) return;
         var attr = File.GetAttributes(path);
@@ -94,11 +96,11 @@ public class MusicTab : View {
         Load(parent.FullName);
     }
     public void AddAll() {
-        var paths = _files.Select(x => Path.Combine(CurrentDir, x)).ToList();
+        var paths = _files.Select(x => Path.Combine(CurrentDir, x.Remove(0, 2))).ToList();
         _playlist.SetTracks(paths);
     }
     public void AppendAll() {
-        var paths = _files.Select(x => Path.Combine(CurrentDir, x)).ToList();
+        var paths = _files.Select(x => Path.Combine(CurrentDir, x.Remove(0, 2))).ToList();
         _playlist.AddTracks(paths);
     }
 }

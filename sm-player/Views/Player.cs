@@ -15,9 +15,15 @@ public class Player : FrameView {
     ProgressBar _progress;
     private MediaPlayer _mediaPlayer { get; set; }
     public EventHandler<EventArgs> EndReached;
+    Logger logger = new Logger();
     public void InitMediaPlayer() {
-        if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
-            _mediaPlayer.Stop();
+        try {
+            if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
+                _mediaPlayer.Stop();
+        }
+        catch (Exception e) {
+            logger.Log(e.Message);
+        }
         _mediaPlayer = new MediaPlayer(libvlc);
         if (EndReached is not null)
             _mediaPlayer.EndReached += EndReached;
@@ -59,25 +65,40 @@ public class Player : FrameView {
         _label.Text = track.Name;
         InitMediaPlayer();
         var media = new Media(libvlc, new Uri(track.FullPath));
-        _mediaPlayer.Media = media;
-        _mediaPlayer.Play();
+        try {
+            _mediaPlayer.Media = media;
+            _mediaPlayer.Play();
+        }
+        catch (Exception e) {
+            logger.Log(e.Message);
+        }
         _playPauseButton.Text = "Pause";
     }
     public void Stop() {
-        _mediaPlayer.Stop();
+        try {
+            _mediaPlayer.Stop();
+        }
+        catch (Exception e) {
+            logger.Log(e.Message);
+        }
         Track = null;
         _label.Text = "No Track";
         _playPauseButton.Text = "Play";
     }
     void PlayPause() {
         if (Track is null) return;
-        if (_mediaPlayer.IsPlaying) {
-            _mediaPlayer.Pause();
-            _playPauseButton.Text = "Play";
+        try {
+            if (_mediaPlayer.IsPlaying) {
+                _mediaPlayer.Pause();
+                _playPauseButton.Text = "Play";
+            }
+            else {
+                _mediaPlayer.Play();
+                _playPauseButton.Text = "Pause";
+            }
         }
-        else {
-            _mediaPlayer.Play();
-            _playPauseButton.Text = "Pause";
+        catch (Exception e) {
+            logger.Log(e.Message);
         }
     }
 

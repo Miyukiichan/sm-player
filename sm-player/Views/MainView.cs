@@ -4,6 +4,9 @@ using Terminal.Gui;
 namespace sm_player.Views;
 
 public class MainTabs : FrameView {
+    SettingsTab _settings;
+    MusicTab _musicTab;
+    PodcastTab _podcastTab;
     public MainTabs(Playlist playlist) {
         Width = Dim.Percent(50);
         Height = Dim.Fill() - 3;
@@ -13,18 +16,20 @@ public class MainTabs : FrameView {
             Height = Dim.Fill()
         };
         tabs.Style.ShowBorder = false;
-        var settings = new SettingsTab();
-        if (settings.Settings.EnableMusic)
-            tabs.AddTab(new TabView.Tab("Music", new MusicTab(playlist, settings.Settings)), false);
-        if (settings.Settings.EnablePodcasts)
-            tabs.AddTab(new TabView.Tab("Podcasts", new PodcastTab()), false);
-        if (settings.Settings.EnableSpotify)
+        _settings = new SettingsTab();
+        _musicTab = new MusicTab(playlist, _settings.Settings);
+        _podcastTab = new PodcastTab();
+        if (_settings.Settings.EnableMusic)
+            tabs.AddTab(new TabView.Tab("Music", _musicTab), false);
+        if (_settings.Settings.EnablePodcasts)
+            tabs.AddTab(new TabView.Tab("Podcasts", _podcastTab), false);
+        if (_settings.Settings.EnableSpotify)
             tabs.AddTab(new TabView.Tab("Spotify", new SpotifyTab()), false);
-        if (settings.Settings.EnableYoutube)
+        if (_settings.Settings.EnableYoutube)
             tabs.AddTab(new TabView.Tab("Youtube", new YoutubeTab()), false);
-        if (settings.Settings.EnableStreams)
+        if (_settings.Settings.EnableStreams)
             tabs.AddTab(new TabView.Tab("Streams", new StreamTab()), false);
-        tabs.AddTab(new TabView.Tab("Settings", settings), false);
+        tabs.AddTab(new TabView.Tab("Settings", _settings), false);
         tabs.SelectedTab = tabs.Tabs.First();
         Add(tabs);
     }

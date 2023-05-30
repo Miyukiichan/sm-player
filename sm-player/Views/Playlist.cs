@@ -113,8 +113,7 @@ public class Playlist : FrameView {
             _table.SelectedRow = Tracks.IndexOf(track);
         }
         else {
-            //Focus to table to refresh the content
-            _table.SetFocus();
+            Application.Refresh();
         }
     }
     public void SetTracks(List<string> paths) {
@@ -146,7 +145,7 @@ public class Playlist : FrameView {
         Tracks.Remove(track);
         _table.SelectedRow = trackIdx;
         if (_player.Track != track) {
-            _table.SetFocus();
+            Application.Refresh();
             return;
         }
         _player.Stop();
