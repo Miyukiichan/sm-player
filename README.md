@@ -9,7 +9,6 @@
   - Playback position
   - Playback mode and state
 - Playlist saving/loading
-- Volume Control - maybe
 - Next/prev track
 - Append single track
 - Ordering by tag index by default

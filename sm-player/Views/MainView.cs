@@ -9,7 +9,7 @@ public class MainTabs : FrameView {
     PodcastTab _podcastTab;
     public MainTabs(Playlist playlist) {
         Width = Dim.Percent(50);
-        Height = Dim.Fill() - 3;
+        Height = Dim.Fill() - 7;
         Border.BorderStyle = BorderStyle.Rounded;
         var tabs = new TabView {
             Width = Dim.Fill(),
@@ -42,10 +42,10 @@ public class MainView: View {
         Width = Dim.Fill();
         Height = Dim.Fill();
         var player = new Player ();
-        player.Y = Pos.Bottom(this) - 3;
+        player.Y = Pos.Bottom(this) - 7;
         _playlist = new Playlist(player) {
             Width = Dim.Percent(50),
-            Height = Dim.Fill() - 3,
+            Height = Dim.Fill() - 7,
             X = Pos.Percent(50)
         };
         var tabs = new MainTabs(_playlist);

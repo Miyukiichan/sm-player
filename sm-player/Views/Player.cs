@@ -5,6 +5,54 @@ using sm_player.Models;
 namespace sm_player.Views;
 
 public enum PlaybackMode { Repeat, RepeatSingle, NoRepeat, Shuffle }
+
+public class VolumeControls : FrameView {
+    Button _up;
+    Button _down;
+    Label _value;
+    Player _player;
+    public VolumeControls(Player player) {
+        Border.BorderStyle = BorderStyle.Rounded;
+        _player = player;
+        Height = 3;
+        Width = 19;
+        _down = new Button("-") {
+            TextAlignment = TextAlignment.Centered,
+            X = 1
+        };
+        _value = new Label("100") {
+            TextAlignment = TextAlignment.Centered,
+            X = 7
+        };
+        _up = new Button("+") {
+            TextAlignment = TextAlignment.Centered,
+            X = 11,
+        };
+        _down.Clicked += DecreaseVolume;
+        _up.Clicked += IncreaseVolume;
+        _value.MouseClick += VolumeChange;
+        Add(_down, _up, _value);
+    }
+    void VolumeChange(MouseEventArgs args) {
+        if (args.MouseEvent.Flags.HasFlag(MouseFlags.WheeledUp)) {
+            IncreaseVolume();
+        }
+        else if (args.MouseEvent.Flags.HasFlag(MouseFlags.WheeledDown)) {
+            DecreaseVolume();
+        }
+    }
+    void IncreaseVolume() {
+        SetVolume(_player.IncreaseVolume());
+    }
+    void DecreaseVolume() {
+        SetVolume(_player.DecreaseVolume());
+    }
+    public void SetVolume(int value) {
+        _value.Text = value.ToString();
+        Application.Refresh();
+    }
+}
+
 public class Player : FrameView {
     public PlaybackMode PlaybackMode { get; set; } = PlaybackMode.Repeat ;
     public Track? Track { get; set; }
@@ -13,50 +61,64 @@ public class Player : FrameView {
     Button _repeatButton;
     LibVLC libvlc = new LibVLC(enableDebugLogs: false);
     ProgressBar _progress;
-    private MediaPlayer _mediaPlayer { get; set; }
+    public MediaPlayer MediaPlayer { get; set; }
     public EventHandler<EventArgs> EndReached;
     Logger logger = new Logger();
+    VolumeControls _volume;
+    public int Volume { get; set; } = 100;
     public void InitMediaPlayer() {
         try {
-            if (_mediaPlayer != null && _mediaPlayer.IsPlaying)
-                _mediaPlayer.Stop();
+            if (MediaPlayer != null && MediaPlayer.IsPlaying)
+                MediaPlayer.Stop();
         }
         catch (Exception e) {
             logger.Log(e.Message);
         }
-        _mediaPlayer = new MediaPlayer(libvlc);
+        Volume = 100;
+        if (MediaPlayer != null)
+            Volume = MediaPlayer.Volume;
+        MediaPlayer = new MediaPlayer(libvlc);
+        MediaPlayer.Volume = Volume;
         if (EndReached is not null)
-            _mediaPlayer.EndReached += EndReached;
+            MediaPlayer.EndReached += EndReached;
     }
     public Player() {
         Border.BorderStyle = BorderStyle.Rounded;
         Width = Dim.Fill();
-        Height = 3;
-        InitMediaPlayer();
+        Height = 7;
         _label = new Label {
-            Text = "No Track"
+            Text = "No Track",
+            Y = 1,
+            X = 1,
         };
         _playPauseButton = new Button("Play");
-        _playPauseButton.X = Pos.Percent(100) - 20;
+        _playPauseButton.X = Pos.Percent(100) - 21;
+        _playPauseButton.Y = 1;
         _playPauseButton.Clicked += PlayPause;
         _repeatButton = new Button("Repeat");
-        _repeatButton.X = Pos.Percent(100) - 10;
+        _repeatButton.X = Pos.Percent(100) - 11;
+        _repeatButton.Y = 1;
         _repeatButton.Clicked += RepeatToggle;
         _progress = new ProgressBar {
-            X = Pos.Right(_label) + 2,
-            Width = Dim.Fill() - 28,
-            Height = 1,
+            Y = 4,
+            Width = Dim.Fill(),
+            Height = 3,
             Fraction = 0,
         };
         Application.MainLoop.AddTimeout(TimeSpan.FromSeconds(1), (mainLoop) => {
-            if (_mediaPlayer is null) 
+            if (MediaPlayer is null) 
                 _progress.Fraction = 0;
             else
-                _progress.Fraction = _mediaPlayer.Position;
+                _progress.Fraction = MediaPlayer.Position;
             return true;
         });
         _progress.MouseClick += ProgressClicked;
-        Add(_label, _playPauseButton, _repeatButton, _progress);
+        _volume = new VolumeControls(this) {
+            X = Pos.Left(_playPauseButton) - 21,
+            Y = 0,
+        };
+        InitMediaPlayer();
+        Add(_label, _progress, _volume, _playPauseButton, _repeatButton);
     }
 
     public void SetTrack(Track? track) {
@@ -66,8 +128,12 @@ public class Player : FrameView {
         InitMediaPlayer();
         var media = new Media(libvlc, new Uri(track.FullPath));
         try {
-            _mediaPlayer.Media = media;
-            _mediaPlayer.Play();
+            MediaPlayer.Media = media;
+            MediaPlayer.Play();
+            //Need to sleep here to allow the media player to determine the volume - otherwise it will be 0 or -1
+            Thread.Sleep(100);
+            _volume.SetVolume(MediaPlayer.Volume);
+            Volume = MediaPlayer.Volume;
         }
         catch (Exception e) {
             logger.Log(e.Message);
@@ -76,7 +142,7 @@ public class Player : FrameView {
     }
     public void Stop() {
         try {
-            _mediaPlayer.Stop();
+            MediaPlayer.Stop();
         }
         catch (Exception e) {
             logger.Log(e.Message);
@@ -88,12 +154,12 @@ public class Player : FrameView {
     void PlayPause() {
         if (Track is null) return;
         try {
-            if (_mediaPlayer.IsPlaying) {
-                _mediaPlayer.Pause();
+            if (MediaPlayer.IsPlaying) {
+                MediaPlayer.Pause();
                 _playPauseButton.Text = "Play";
             }
             else {
-                _mediaPlayer.Play();
+                MediaPlayer.Play();
                 _playPauseButton.Text = "Pause";
             }
         }
@@ -108,35 +174,53 @@ public class Player : FrameView {
             case (PlaybackMode.Repeat): {
                 PlaybackMode = PlaybackMode.RepeatSingle;
                 _repeatButton.Text = "Repeat Single";
-                _playPauseButton.X = Pos.Percent(100) - 27;
-                _repeatButton.X = Pos.Percent(100) - 17;
+                _playPauseButton.X = Pos.Percent(100) - 28;
+                _repeatButton.X = Pos.Percent(100) - 18;
                 break;
             }
             case (PlaybackMode.RepeatSingle): {
                 PlaybackMode = PlaybackMode.NoRepeat;
                 _repeatButton.Text = "No Repeat";
-                _playPauseButton.X = Pos.Percent(100) - 23;
-                _repeatButton.X = Pos.Percent(100) - 13;
+                _playPauseButton.X = Pos.Percent(100) - 24;
+                _repeatButton.X = Pos.Percent(100) - 14;
                 break;
             }
             case (PlaybackMode.NoRepeat): {
                 PlaybackMode = PlaybackMode.Shuffle;
                 _repeatButton.Text = "Shuffle";
-                _playPauseButton.X = Pos.Percent(100) - 21;
-                _repeatButton.X = Pos.Percent(100) - 11;
+                _playPauseButton.X = Pos.Percent(100) - 20;
+                _repeatButton.X = Pos.Percent(100) - 10;
                 break;
             }
             case (PlaybackMode.Shuffle): {
                 PlaybackMode = PlaybackMode.Repeat;
                 _repeatButton.Text = "Repeat";
-                _playPauseButton.X = Pos.Percent(100) - 20;
-                _repeatButton.X = Pos.Percent(100) - 10;
+                _playPauseButton.X = Pos.Percent(100) - 19;
+                _repeatButton.X = Pos.Percent(100) - 9;
                 break;
             }
         }
     }
     void ProgressClicked(MouseEventArgs args) {
         if (args.MouseEvent.Flags.HasFlag(MouseFlags.Button1Clicked))
-            _mediaPlayer.Position = (float)args.MouseEvent.X / (float)_progress.Bounds.Width;
+            MediaPlayer.Position = (float)args.MouseEvent.X / (float)_progress.Bounds.Width;
+    }
+
+    public int IncreaseVolume(int value = 5) {
+        if (Volume + value > 100)
+            Volume = 100;
+        else
+            Volume = Volume + value;
+        MediaPlayer.Volume = Volume;
+        return Volume;
+    }
+
+    public int DecreaseVolume(int value = 5) {
+        if (Volume < value)
+            Volume = 0;
+        else
+            Volume = Volume - value;
+        MediaPlayer.Volume = Volume;
+        return Volume;
     }
 }
